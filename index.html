@@ -64,6 +64,10 @@
   @keyframes pop { 0%,100%{transform:scale(.8); opacity:.6} 50%{transform:scale(1.2); opacity:1} }
   .rosebox { width:min(88vw,360px); aspect-ratio:480/396; overflow:hidden; border-radius:22px; box-shadow:0 8px 24px rgba(0,0,0,.15); }
   .rosebox img { width:100%; display:block; }
+  .presets { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .presets .item { flex:1 1 140px; justify-content:center; }
+  #timeOk { background:var(--pink); color:#fff; padding:12px 22px; }
+  #customTime { font:inherit; font-size:18px; }
   #sendStatus { font-size:13px; opacity:.55; margin-top:18px; }
 </style>
 </head>
@@ -91,8 +95,13 @@
 
 <!-- 3: Время -->
 <section class="screen" id="s3">
-  <h2>Когда тебе удобно? 🗓️</h2>
+  <h2 id="s3title">Когда тебе удобно? 🗓️</h2>
   <div class="items" id="times"></div>
+  <div class="items" id="timePanel" style="display:none">
+    <div class="presets" id="presets"></div>
+    <div class="custom"><input type="time" id="customTime"><button id="timeOk" style="font-size:18px">Готово</button></div>
+    <button class="item" id="backDays" style="justify-content:center;background:transparent;box-shadow:none;font-size:16px">← другой день</button>
+  </div>
 </section>
 
 <!-- 4: Финал -->
@@ -121,18 +130,13 @@ const CATEGORIES = {
   "🎲 Настолки":      ["Шахматы", "Шашки", "Пазлы"],
   "📝 Опросники":     ["Какой ты персонаж?", "Насколько мы совместимы?", "20 вопросов друг другу", "Что у нас общего?"],
 };
-const TIMES = [
-  "Понедельник, день, 17:00",
-  "Понедельник, вечер, 18:30",
-  "Среда, день, 17:00",
-  "Среда, вечер, 20:00",
-  "Четверг, день, 17:00",
-  "Четверг, вечер, 20:00",
-  "Пятница, день, 17:00",
-  "Пятница, вечер, 20:30",
-  "Суббота, вечер, 20:00",
-  "Воскресенье, день, 17:00",
-  "Воскресенье, вечер, 20:00",
+const DAYS = [
+  { name:"Понедельник", presets:[["день","17:00"],["вечер","18:30"]] },
+  { name:"Среда",       presets:[["день","17:00"],["вечер","20:00"]] },
+  { name:"Четверг",     presets:[["день","17:00"],["вечер","20:00"]] },
+  { name:"Пятница",     presets:[["день","17:00"],["вечер","20:30"]] },
+  { name:"Суббота",     presets:[["вечер","20:00"]] },
+  { name:"Воскресенье", presets:[["день","17:00"],["вечер","20:00"]] },
 ];
 
 const $ = id => document.getElementById(id);
@@ -217,13 +221,39 @@ $("customInput").addEventListener("keydown", e => { if (e.key === "Enter") addCu
 $("next1").onclick = () => show("s3");
 
 /* ====== ЭКРАН 3 ====== */
-TIMES.forEach(t => {
+let pickedDay = null;
+DAYS.forEach(d => {
   const b = document.createElement("button");
   b.className = "item";
-  b.innerHTML = `<span>${t}</span><span class="mark">💞</span>`;
-  b.onclick = () => finish(t);
+  b.innerHTML = `<span>${d.name}</span><span class="mark">💞</span>`;
+  b.onclick = () => openDay(d);
   $("times").appendChild(b);
 });
+function openDay(d) {
+  pickedDay = d;
+  $("s3title").textContent = d.name + ": во сколько? 🕒";
+  $("times").style.display = "none";
+  $("timePanel").style.display = "flex";
+  $("customTime").value = "";
+  $("presets").innerHTML = "";
+  d.presets.forEach(([label, t]) => {
+    const b = document.createElement("button");
+    b.className = "item";
+    b.innerHTML = `<span>${label[0].toUpperCase() + label.slice(1)}, ${t}</span>`;
+    b.onclick = () => finish(`${d.name}, ${label}, ${t}`);
+    $("presets").appendChild(b);
+  });
+}
+$("timeOk").onclick = () => {
+  const t = $("customTime").value;
+  if (!t) { $("customTime").focus(); return; }
+  finish(`${pickedDay.name}, ${t} (своё время)`);
+};
+$("backDays").onclick = () => {
+  $("s3title").textContent = "Когда тебе удобно? 🗓️";
+  $("timePanel").style.display = "none";
+  $("times").style.display = "flex";
+};
 
 /* ====== ФИНАЛ ====== */
 let sent = false;

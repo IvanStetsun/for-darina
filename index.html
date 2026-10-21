@@ -68,6 +68,11 @@
   .presets .item { flex:1 1 140px; justify-content:center; }
   #timeOk { background:var(--pink); color:#fff; padding:12px 22px; }
   #customTime { font:inherit; font-size:18px; }
+  #beg { position:fixed; inset:0; z-index:100; display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px; padding:20px; background:rgba(74,29,51,.82); text-align:center; }
+  #beg.on { display:flex; animation: fade .3s ease; }
+  #beg video { width:min(92vw,420px); border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,.4); background:#000; }
+  .begtxt { color:#fff; font-size:clamp(20px,5.5vw,28px); font-weight:700; max-width:420px; }
   #sendStatus { font-size:13px; opacity:.55; margin-top:18px; }
 </style>
 </head>
@@ -112,6 +117,12 @@
   <div id="hearts"></div>
 </section>
 
+<!-- видео после каждого «Нет» -->
+<div id="beg" onclick="closeBeg()">
+  <video id="begVideo" src="bow.mp4" muted playsinline preload="auto"></video>
+  <div class="begtxt" id="begTxt"></div>
+</div>
+
 <script>
 /* ====== НАСТРОЙКИ TELEGRAM ======
    1) @BotFather -> /newbot -> скопируй токен сюда
@@ -128,6 +139,7 @@ const WEB3FORMS_KEY = "2035ee75-9558-470b-afd9-2c9fbc88dd6b";
 const CATEGORIES = {
   "🎬 Фильмы":        ["Оно", "Форма голоса", "До встречи с тобой", "Электроник"],
   "🎲 Настолки":      ["Шахматы", "Шашки", "Пазлы"],
+  "💻 Онлайн":        ["Карточные игры (Playingcards.io)", "Рисуем и угадываем (Sketchful)", "Настолки онлайн (Board Game Arena)", "Пазл из нашего фото", "Раскраски онлайн", "Онлайн-фотобудка", "Правда или действие", "Детектив: раскрой убийство", "Письмо друг другу в будущее (FutureMe)", "Виртуальное путешествие", "Угадываем места (GeoGuessr)"],
   "📝 Опросники":     ["Какой ты персонаж?", "Насколько мы совместимы?", "20 вопросов друг другу", "Что у нас общего?"],
 };
 const DAYS = [
@@ -149,7 +161,26 @@ const noSteps = [
   { emo:"🧎", txt:"Умоляю!" },
 ];
 let noCount = 0;
+const BEG_TEXTS = [
+  "Умоляю… ну ты самая красивая булочка, пожалуйста 🥺",
+  "Ну богиня моя, пожалуйста 🥺🙏",
+  "О прекраснейшая из прекраснейших, та, лучше которой нет, и та, что подарила мне лучшие моменты жизни ❤️"
+];
+function showBeg(text) {
+  $("begTxt").textContent = text;
+  const v = $("begVideo");
+  $("beg").classList.add("on");
+  try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  v.loop = true;
+  clearTimeout(showBeg.t); showBeg.t = setTimeout(closeBeg, Math.max(3600, text.length * 65));
+}
+function closeBeg() {
+  clearTimeout(showBeg.t);
+  $("beg").classList.remove("on");
+  try { $("begVideo").pause(); } catch (e) {}
+}
 $("no").addEventListener("click", () => {
+  if (noCount < BEG_TEXTS.length) showBeg(BEG_TEXTS[noCount]);
   if (noCount < noSteps.length) {
     const s = noSteps[noCount];
     $("reaction").innerHTML = `<div class="emo">${s.emo}</div><div class="txt">${s.txt}</div>`;
